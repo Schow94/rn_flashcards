@@ -3,57 +3,35 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import FlashCard from '../components/FlashCard';
 import googledict from '../api/googledict';
 import words from '../words';
-
-// const words = [
-//   {
-//     word: 'Ambiguous',
-//     pronounciation: 'am·big·u·ous',
-//     sounding: '/amˈbiɡyo͞oəs/',
-//     spech: 'adjective',
-//     definition:
-//       '(of language) open to more than one interpretation; having a double meaning.',
-//   },
-//   {
-//     word: 'Ambitious',
-//     pronounciation: 'am·bi·tious',
-//     sounding: '/amˈbiSHəs/',
-//     spech: 'adjective',
-//     definition:
-//       'having or showing a strong desire and determination to succeed.',
-//   },
-//   {
-//     word: 'Ambivalence',
-//     pronounciation: 'am·biv·a·lence',
-//     sounding: '/amˈbivələns/',
-//     spech: 'noun',
-//     definition:
-//       'the state of having mixed feelings or contradictory ideas about something or someone.',
-//   },
-//   {
-//     word: 'Analogous',
-//     pronounciation: 'a·nal·o·gous',
-//     sounding: 'a·nal·o·gous',
-//     spech: 'adjective',
-//     definition:
-//       'comparable in certain respects, typically in a way which makes clearer the nature of the things compared.',
-//   },
-// ];
+import { Feather } from '@expo/vector-icons';
+import { Entypo } from '@expo/vector-icons';
 
 const FlashCardScreen = () => {
-  const [card, setCard] = useState({});
-  const [word, setWord] = useState({
+  const [card, setCard] = useState({
     word: '',
     definition: '',
     speech: '',
     example: '',
     synonyms: [''],
   });
+
+  const [word, setWord] = useState('inscrutable');
+
   const [errMsg, setErrMsg] = useState('');
+
+  const [right, setRight] = useState(0);
+  const [wrong, setWrong] = useState(0);
+
+  const [front, setFront] = useState(true);
+
+  const toggleFront = () => {
+    setFront(!front);
+  };
 
   const newCard = async () => {
     const idx = Math.floor(Math.random() * words.length);
-    // setCard(words[idx]);
     setWord(words[idx]);
+
     try {
       const res = await googledict.get(`/${word}`);
 
@@ -72,12 +50,22 @@ const FlashCardScreen = () => {
       console.log('wordObj: ', wordObj);
 
       setCard(wordObj);
-
       setErrMsg('');
     } catch (e) {
       setErrMsg('Something went wrong');
-      //   console.log(e);
     }
+    //   Flip card to front if new word
+    setFront(true);
+  };
+
+  const pressRight = () => {
+    setRight(right + 1);
+    newCard();
+  };
+
+  const pressWrong = () => {
+    setWrong(wrong + 1);
+    newCard();
   };
 
   useEffect(() => {
@@ -86,12 +74,43 @@ const FlashCardScreen = () => {
 
   return (
     <View style={styles.container} elevation={10}>
-      <Text style={styles.title}>Test your knowledge</Text>
-      <FlashCard card={card} errMsg={errMsg} />
+      <View style={styles.score}>
+        <Text style={styles.right}>Right: {right}</Text>
+        <Text style={styles.wrong}>Wrong: {wrong}</Text>
+      </View>
 
-      <TouchableOpacity style={styles.nextButton} onPress={() => newCard()}>
-        <Text style={styles.nextText}>Next Word</Text>
-      </TouchableOpacity>
+      <Text style={styles.title}>Test your knowledge</Text>
+
+      <FlashCard
+        card={card}
+        errMsg={errMsg}
+        front={front}
+        toggleFront={toggleFront}
+      />
+
+      <View style={styles.btnContainer}>
+        {errMsg.length > 2 ? (
+          <TouchableOpacity style={styles.nextButton} onPress={() => newCard()}>
+            <Text style={styles.tryAgain}>Try again</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.rightAndWrong}>
+            <TouchableOpacity
+              style={styles.wrongBtn}
+              onPress={() => pressWrong()}
+            >
+              <Entypo style={styles.btnText} name="cross" color="white" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.rightBtn}
+              onPress={() => pressRight()}
+            >
+              <Feather style={styles.btnText} name="check" color="white" />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     </View>
   );
 };
@@ -101,12 +120,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f0f0f0',
   },
+
   title: {
     fontSize: 20,
-    margin: 10,
+    marginTop: 30,
     color: 'grey',
     alignSelf: 'center',
   },
+
+  btnContainer: {
+    marginTop: 50,
+  },
+
   nextButton: {
     backgroundColor: '#2e96ff',
     width: 120,
@@ -121,8 +146,84 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 2,
   },
+
+  tryAgain: {
+    color: 'white',
+    fontSize: 20,
+  },
+
   nextText: {
     color: 'white',
+  },
+
+  right: {
+    color: 'green',
+    marginLeft: 5,
+    fontSize: 17,
+    letterSpacing: 1,
+    marginBottom: 3,
+  },
+
+  wrong: {
+    color: 'red',
+    marginLeft: 5,
+    fontSize: 17,
+    letterSpacing: 1,
+  },
+
+  score: {
+    borderRadius: 10,
+    backgroundColor: 'white',
+    width: 100,
+    height: 70,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    marginLeft: 5,
+    marginTop: 10,
+    marginTop: 10,
+    shadowOffset: { width: 2, height: 2 },
+    shadowColor: 'grey',
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+  },
+
+  rightAndWrong: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+
+  rightBtn: {
+    backgroundColor: 'green',
+    width: 120,
+    height: 70,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowOffset: { width: 2, height: 2 },
+    shadowColor: 'grey',
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
+    margin: 20,
+  },
+
+  btnText: {
+    color: 'white',
+    fontSize: 35,
+  },
+
+  wrongBtn: {
+    backgroundColor: 'red',
+    color: 'white',
+    width: 120,
+    height: 70,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 20,
+    shadowOffset: { width: 2, height: 2 },
+    shadowColor: 'grey',
+    shadowOpacity: 0.5,
+    shadowRadius: 2,
   },
 });
 
